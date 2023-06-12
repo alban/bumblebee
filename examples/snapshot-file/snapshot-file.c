@@ -8,6 +8,13 @@ char __license[] SEC("license") = "Dual MIT/GPL";
 
 const volatile bool show_threads = false;
 
+struct placeholder_inner_field{
+	void *dummy;
+};
+struct placeholder_struct {
+	struct placeholder_inner_field *inner_field;
+};
+
 SEC("iter/task")
 int ig_snap_proc(struct bpf_iter__task *ctx)
 {
@@ -39,8 +46,10 @@ int ig_snap_proc(struct bpf_iter__task *ctx)
 	BPF_SEQ_PRINTF(seq, "%d %d %d %llu %d %d %s\n",
 		task->tgid, task->pid, parent_pid, mntns_id, uid, gid, task->comm);
 
-        ptr.type_id = bpf_core_type_id_kernel(struct user_namespace);
-        ptr.ptr = BPF_CORE_READ(task, cred, user_ns);
+	struct placeholder_struct *task2 = (struct placeholder_struct *) task;
+        ptr.type_id = bpf_core_type_id_kernel(struct placeholder_inner_field);
+
+        ptr.ptr = BPF_CORE_READ(task2, inner_field);
 
 	bpf_seq_printf_btf(seq, &ptr, sizeof(ptr), 0);
 
